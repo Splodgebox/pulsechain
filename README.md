@@ -9,14 +9,27 @@ It acts as a mini workflow engine, similar in concept to tools like Apache Airfl
 ## ⚙️ Overview
 
 Pulsechain allows you to:
-- Define **tasks** with clear dependencies (`A → B → C`).
+- Define **tasks with multiple dependencies** (e.g., `A` and `B` must complete before `C` runs).
 - Automatically manage **execution order** based on those dependencies.
 - Execute tasks **synchronously or asynchronously** using configurable schedulers.
 - Register and store tasks using a clean **registry system**.
 - Add **retries, error handling, and state tracking** out of the box.
 
 Each task in Pulsechain is self-contained - it defines what it does and what it depends on.
-The scheduler then analyzes those dependencies and executes tasks in the correct order, while respecting parallelism and failure conditions.
+The scheduler analyzes all dependencies (including multiple or nested ones) and executes tasks in the correct order, while respecting parallelism and failure conditions.
+
+---
+
+### 🔁 Example Flow (Multiple Dependencies)
+
+```
+Task A ─┐
+        ├──▶ Task C
+Task B ─┘
+
+Task C depends on both Task A and Task B.
+Once both A and B complete successfully, C is executed automatically.
+```
 
 ---
 
