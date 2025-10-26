@@ -10,7 +10,9 @@ public class TaskException extends Exception {
     public enum ErrorType {
         SELF_DEPENDENCY("Task cannot depend on itself"),
         NULL_DEPENDENCY("Dependency cannot be null"),
-        INVALID_DEPENDENCY("Invalid dependency specified");
+        INVALID_DEPENDENCY("Invalid dependency specified"),
+        TASK_NOT_FOUND("Task not found"),
+        CIRCULAR_DEPENDENCY("Circular dependency detected");
 
         private final String defaultMessage;
 
@@ -39,5 +41,12 @@ public class TaskException extends Exception {
         this.invalidDependency = null;
         this.errorType = errorType;
     }
+
+    public TaskException(ErrorType errorType, String customMessage) {
+        super(customMessage);
+        this.invalidDependency = null;
+        this.errorType = errorType;
+    }
+
 }
 
