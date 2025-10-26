@@ -17,14 +17,19 @@ public class TaskResult {
     private final Task task;
     private final TaskState finalState;
     private final LocalDateTime executionTime;
+    private final int retryCount;
 
     private final Throwable error;
 
     public static TaskResult success(Task task) {
-        return new TaskResult(task, TaskState.SUCCESS, LocalDateTime.now(), null);
+        return new TaskResult(task, TaskState.SUCCESS, LocalDateTime.now(), task.getRetryCount(), null);
     }
 
     public static TaskResult failure(Task task, Throwable error) {
-        return new TaskResult(task, TaskState.FAILED, LocalDateTime.now(), error);
+        return new TaskResult(task, TaskState.FAILED, LocalDateTime.now(), task.getRetryCount(), error);
+    }
+
+    public static TaskResult blocked(Task task) {
+        return new TaskResult(task, TaskState.BLOCKED, LocalDateTime.now(), task.getRetryCount(), null);
     }
 }

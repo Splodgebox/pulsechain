@@ -4,12 +4,10 @@ import net.pulsechain.task.Task;
 import net.pulsechain.task.TaskState;
 import net.pulsechain.task.exception.TaskException;
 import net.pulsechain.task.handler.TaskHandler;
+import net.pulsechain.task.handler.result.TaskResult;
 import net.pulsechain.task.registry.TaskRegistry;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskScheduler implements ITaskScheduler, AutoCloseable {
@@ -39,31 +37,39 @@ public class TaskScheduler implements ITaskScheduler, AutoCloseable {
     }
 
     @Override
-    public void executeAll() throws TaskException {
+    public List<TaskResult> executeAll() throws TaskException {
         if (hasCircularDependency()) {
             throw new TaskException(TaskException.ErrorType.CIRCULAR_DEPENDENCY, "Circular dependency detected");
         }
 
+        List<TaskResult> results = new ArrayList<>();
         while (!scheduledTasks.isEmpty()) {
-            execute(scheduledTasks.poll());
+            results.add(execute(scheduledTasks.poll()));
         }
+        return results;
     }
 
     @Override
-    public void execute(Task task) throws TaskException {
+    public TaskResult execute(Task task) throws TaskException {
         if (hasCircularDependency()) {
             throw new TaskException(task.getId(), TaskException.ErrorType.CIRCULAR_DEPENDENCY);
         }
 
-        if (task.getState() == TaskState.SUCCESS) return;
+        if (task.getState() == TaskState.SUCCESS) return TaskResult.success(task);
 
         for (UUID dependency : task.getDependencies()) {
             Task dependencyTask = taskRegistry.get(dependency).orElseThrow(() -> new TaskException(dependency, TaskException.ErrorType.TASK_NOT_FOUND));
             if (dependencyTask.getState() != TaskState.SUCCESS) {
                 execute(dependencyTask);
             }
+
+            if (dependencyTask.getState() == TaskState.FAILED) {
+                task.setState(TaskState.BLOCKED);
+                return TaskResult.blocked(task);
+            }
         }
-        taskHandler.executeTask(task);
+
+        return taskHandler.executeTask(task);
     }
 
     @Override

@@ -24,27 +24,52 @@ public abstract class Task implements TaskExecutable {
     private TaskState state = TaskState.PENDING;
 
     private int retryCount = 0;
+    private int maxRetries = 3;
 
     public Task(@NonNull String name) {
-        this(name, new ArrayList<>());
+        this.name = name;
+        this.dependencies = new ArrayList<>();
     }
 
-    public Task(@NonNull String name, List<UUID> dependencies) {
+    public Task(@NonNull String name, UUID... dependencies) {
         this.name = name;
-        this.dependencies = dependencies;
+        this.dependencies = List.of(dependencies);
     }
 
     @Override
-    public void addDependency(UUID dependency) throws TaskException {
-        if (dependency != null && !dependency.equals(this.id)) {
-            dependencies.add(dependency);
-        } else {
+    public void addDependency(Task task) throws TaskException {
+        if (task == null) {
             throw new TaskException(
-                    dependency,
+                    null,
+                    TaskException.ErrorType.NULL_DEPENDENCY,
+                    "Dependency cannot be null"
+            );
+        }
+
+        UUID dependencyId = task.getId();
+
+        if (dependencyId.equals(this.id)) {
+            throw new TaskException(
+                    dependencyId,
                     TaskException.ErrorType.SELF_DEPENDENCY,
                     "Dependency cannot be the same as the task itself"
             );
         }
+
+        dependencies.add(dependencyId);
+    }
+
+    @Override
+    public void addDependencies(Task... tasks) throws TaskException {
+        for (Task task : tasks) {
+            addDependency(task);
+        }
+    }
+
+    @Override
+    public Task withMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+        return this;
     }
 
     public abstract void execute();

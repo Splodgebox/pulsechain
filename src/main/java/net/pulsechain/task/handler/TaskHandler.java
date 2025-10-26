@@ -13,15 +13,22 @@ public class TaskHandler implements ITaskHandler {
             throw new TaskException(TaskException.ErrorType.TASK_NOT_FOUND, "Error retrying task: Task is null");
         }
 
-        try {
-            task.setState(TaskState.RUNNING);
-            task.execute();
-            task.setState(TaskState.SUCCESS);
-            return TaskResult.success(task);
-        } catch (Exception e) {
-            task.setState(TaskState.FAILED);
-            return TaskResult.failure(task, e);
+        while (task.getRetryCount() < task.getMaxRetries()) {
+            try {
+                task.setState(TaskState.RUNNING);
+                task.execute();
+                task.setState(TaskState.SUCCESS);
+                return TaskResult.success(task);
+            } catch (Exception e) {
+                task.setRetryCount(task.getRetryCount() + 1);
+                if (task.getRetryCount() >= task.getMaxRetries()) {
+                    task.setState(TaskState.FAILED);
+                    return TaskResult.failure(task, e);
+                }
+            }
         }
+
+        return TaskResult.failure(task, new Exception("Unknown retry logic failure"));
     }
 
     @Override
